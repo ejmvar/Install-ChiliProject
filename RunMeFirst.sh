@@ -17,4 +17,4 @@ fi
 apt-get -qqy install expect expect-dev mysql-server phpmyadmin
 
 # launch expect script to set up ChiliProject
-./chiliproject.exp
+./Install-ChiliProject.exp
