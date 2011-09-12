@@ -1,0 +1,14 @@
+#####
+#  RunMeFirst.sh -- Prerequisite script for ChiliProject installation on Ubuntu 10.04 LTS
+#####
+# This script will install expect and mysql-server and phpmyadmin applications and then
+# call chiliproject.exp to finish installing chiliproject on Ubuntu 10.04 LTS
+#####
+
+
+#####
+# chiliproject.exp -- ChiliProject setup expect script for Ubuntu 10.04 LTS
+#####
+# This script will download Chiliproject and perform the installation 
+# required for Ubuntu 10.04 LTS 
+#####

@@ -1,0 +1,177 @@
+#!/usr/bin/expect -f
+
+#####
+# Chiliproject setup expect script for Ubuntu 10.04 LTS
+#####
+# This script will download Chiliproject and perform the installation 
+# required for Ubuntu 10.04 LTS 
+#####
+
+# Gather network and software configuration info from user interactively
+
+# Loop until user is satisfied with correctness of information
+set done "no"
+while {$done != "yes"} {
+    
+# Clear the screen
+spawn "clear"
+expect "#"
+set timeout -1
+
+# Ask for ip address of this host -- would like to read and suggest default value
+send_user "host's ip address: "
+expect_user -re "(.*)\n" {set ipaddress $expect_out(1,string)}
+send_user "\n"
+
+# Ask for the fully qualified domain name of this host -- todo suggest fqdn
+send_user "host's FQDN: "
+expect_user -re "(.*)\n" {set hostfqdn $expect_out(1,string)}
+send_user "\n"
+
+# Ask for the fully qualified domain name for phpmyadmin -- todo suggest fqdn
+send_user "phpmyadmin virtual host FQDN: "
+expect_user -re "(.*)\n" {set phpmyadminfqdn $expect_out(1,string)}
+send_user "\n"
+
+# Ask for the fully qualified domain name for chiliproject -- todo suggest fqdn
+send_user "chiliproject virtual host FQDN: "
+expect_user -re "(.*)\n" {set chiliprojectfqdn $expect_out(1,string)}
+send_user "\n"
+
+# Clear the screen
+spawn "clear"
+expect "#"
+
+# echo variables to user
+send_user "$ipaddress <--- hosts's ip address\n"
+send_user "$hostfqdn <--- hosts's FQDN\n"
+send_user "$phpmyadminfqdn <--- phpmyadmin's FQDN\n"
+send_user "$chiliprojectfqdn <--- chiliproject's FQDN\n"
+
+# Ask if user is satisified with information entered
+send_user "Is this information correct? (yes/no): "
+expect_user -re "(.*)\n" {set done $expect_out(1,string)}
+send_user "\n"
+}
+
+# End While loop
+
+# Loop until user is satisfied with install directory
+set done "no"
+while {$done != "yes"} {
+
+# Clear the screen
+spawn "clear"
+expect "#"
+set timeout -1
+
+# Save the installation directory in chilipath
+send_user "Installation directory for chiliproject: "
+expect_user -re "(.*)\n" {set chilipath $expect_out(1,string)}
+send_user "\n"
+
+if {![file exists $chilipath]} {
+  send_user "Directory $chilipath doesn't exist. Create it? (yes, no): "
+  expect_user -re "(.*)\n" {set createdir $expect_out(1,string)}
+  send_user "\n"
+
+  if {$createdir == "yes"} {
+    spawn mkdir -p $chilipath
+    expect "#"
+    spawn "clear"
+    expect "#"
+  }
+}
+
+if {[file exists $chilipath]} {
+# Ask if user is satisified with information entered
+    # echo variables to user
+    send_user "$chilipath <--- Install directory for LedgerSMB\n"
+    send_user "\nIs this information correct? (yes/no): "
+    expect_user -re "(.*)\n" {set done $expect_out(1,string)}
+    send_user "\n"
+}
+
+}
+# End While loop
+
+set done "no"
+while {$done != "yes"} {
+    
+# Clear the screen
+spawn "clear"
+expect "#"
+set timeout -1
+
+# Save chiliproject password in chilipass
+send_user "Please enter the password for chiliproject: "
+expect_user -re "(.*)\n" {set chilipass $expect_out(1,string)} 
+send_user "\n"
+
+# Save the superuser role password in superpass
+send_user "Please enter the password for the super users (mysql root and zeus): "
+expect_user -re "(.*)\n" {set superpass $expect_out(1,string)} 
+send_user "\n"
+
+# echo variables to user
+send_user "$chilipass <--- chiliproject's password\n"
+send_user "$superpass <--- postgres' password\n"
+
+# Ask if user is satisified with information entered
+send_user "Is this information correct? (yes/no): "
+expect_user -re "(.*)\n" {set done $expect_out(1,string)}
+send_user "\n"
+
+}
+# End While loop
+
+# Clear the screen
+spawn "clear"
+expect "#"
+
+spawn apt-get update
+expect "#"
+
+# Set Locales
+spawn locale-gen en_US.UTF-8
+spawn update-locale LANG=en_US.UTF-8
+expect "#"
+
+# Install prerequisite packages for Ledger SMB
+spawn apt-get -qqy --force-yes install build-essential curl libssl-dev zlib1g-dev libreadline5-dev libxml2-dev git-core gitosis apache2 libmysqlclient-dev libpq-dev libsqlite3-dev libmagick9-dev ruby1.8-dev apache2-prefork-dev libcurl4-openssl-dev
+expect "#"
+
+# Add ip addresses of virtual hosts to hosts file
+set fp [open /etc/hosts a+]
+puts $fp "\n# The following entries added for apache virtual hosts: phpmyadmin and chiliproject.
+$ipaddress  $hostfqdn
+$ipaddress  $phpmyadminfqdn
+$ipaddress  $chiliprojectfqdn"
+close $fp
+
+# Setup phpmyadmin
+spawn touch /etc/apache2/sites-available/phpmyadmin
+expect "#"
+
+# Create the virtual host file for phpmyadmin
+set fp [open /etc/apache2/sites-available/phpmyadmin w]
+puts $fp "<VirtualHost *:80>
+  ServerName $phpmyadminfqdn
+  DocumentRoot /usr/share/phpmyadmin
+  <Directory /usr/share/phpmyadmin>
+    Options None
+    AllowOverride None
+    
+    Order deny,allow
+    Allow from all
+  </Directory>
+</VirtualHost>"
+close $fp
+
+# Enable the phpmyadmin virtual host
+spawn a2ensite phpmyadmin
+expect "#"
+
+# Reload apache to enable phpmyadmin
+spawn /etc/init.d/apache2 reload
+expect "#"
