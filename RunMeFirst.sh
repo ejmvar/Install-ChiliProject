@@ -14,7 +14,7 @@ if [[ ${UID} != 0 ]]; then
 fi
 
 # install expect, autoexpect, mysql and phpmyadmin packages
-apt-get -qqy install expect mysql-server phpmyadmin
+apt-get -qqy install expect expect-dev mysql-server phpmyadmin
 
 # launch expect script to set up ChiliProject
 ./chiliproject.exp
